@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NITM Assignment Synthesis</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* =========================================
+           PERMANENT DARK THEME VARIABLES
+           ========================================= */
+        :root {
+            --text-main: #ffffff;
+            --text-dim: #94a3b8;
+            --nasa-red: #FC3D21;
+            --panel-bg: rgba(11, 29, 58, 0.45);
+            --nav-bg: rgba(3, 4, 7, 0.6);
+            --input-border: rgba(255, 255, 255, 0.2);
+            --panel-border: rgba(255, 255, 255, 0.1);
+            --shadow-heavy: rgba(0, 0, 0, 0.6);
+            --hud-glow: rgba(252, 61, 33, 0.4);
+            --hud-bg: rgba(0, 0, 0, 0.4);
+            --space-bg: #020305;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--space-bg);
+            color: var(--text-main);
+            margin: 0;
+            overflow: hidden; 
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* -----------------------------------------
+           NEW BACKGROUND & ANIMATION
+           ----------------------------------------- */
+        .building-bg {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            /* EXACT PATH PLUGGED IN HERE WITH .PNG EXTENSION */
+            background-image: url('C:\Users\Subhasish Dutta\Music\NITM WEBSITE\nitm_building.png'); 
+            background-size: cover; 
+            background-position: center;
+            z-index: -3; 
+            animation: slowPan 25s infinite alternate ease-in-out;
+        }
+
+        @keyframes slowPan {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.08); } 
+        }
+
+        .bg-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: linear-gradient(105deg, rgba(3,4,7,0.95) 0%, rgba(3,4,7,0.7) 50%, rgba(3,4,7,0.3) 100%);
+            z-index: -2;
+        }
+
+        /* -----------------------------------------
+           TOP NAVBAR
+           ----------------------------------------- */
+        .navbar {
+            position: fixed; top: 0; left: 0; width: 100%; height: 70px;
+            background: var(--nav-bg); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            border-bottom: 1px solid var(--panel-border); display: flex; justify-content: space-between;
+            align-items: center; padding: 0 40px; box-sizing: border-box; z-index: 1000;
+        }
+        .nav-brand { display: flex; align-items: center; gap: 15px; }
+        .nav-brand img { height: 40px; width: auto; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }
+        .nav-brand span { font-weight: 800; font-size: 1.2rem; letter-spacing: 1px; text-transform: uppercase; }
+
+        /* -----------------------------------------
+           LAYOUT & HERO SECTION
+           ----------------------------------------- */
+        .layout-container {
+            display: flex; width: 100%; min-height: 100vh; padding-top: 70px; box-sizing: border-box; z-index: 10;
+        }
+        .hero-section {
+            flex: 1; padding: 8% 6%; display: flex; flex-direction: column; justify-content: center;
+            animation: fadeIn 1.5s ease-out; position: relative;
+        }
+        .mission-badge {
+            display: inline-flex; color: var(--nasa-red); font-size: 14px; font-weight: 800;
+            letter-spacing: 3px; text-transform: uppercase; margin-bottom: 20px; align-items: center; gap: 10px;
+        }
+        .mission-badge::before { content: ''; display: block; width: 30px; height: 2px; background-color: var(--nasa-red); }
+        .hero-section h1 {
+            font-size: clamp(3rem, 5vw, 5.5rem); font-weight: 900; line-height: 1.05;
+            letter-spacing: -2px; margin: 0 0 24px 0; text-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        }
+        .hero-section p { 
+            font-size: clamp(1.1rem, 1.5vw, 1.3rem); line-height: 1.6; color: var(--text-dim); 
+            max-width: 600px; margin: 0; font-weight: 400; text-shadow: 0 2px 10px rgba(0,0,0,0.5); margin-bottom: 40px;
+        }
+
+        /* -----------------------------------------
+           LIVE TELEMETRY HUD
+           ----------------------------------------- */
+        .telemetry-hud {
+            background: var(--hud-bg); border-left: 3px solid var(--nasa-red); padding: 20px;
+            border-radius: 0 8px 8px 0; display: inline-flex; flex-direction: column; gap: 12px;
+            max-width: 450px; backdrop-filter: blur(10px); box-shadow: 0 10px 30px var(--hud-glow);
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .hud-row { display: flex; justify-content: space-between; align-items: center; gap: 30px; font-size: 13px; }
+        .hud-label { color: var(--text-dim); text-transform: uppercase; font-weight: 700; letter-spacing: 1px; }
+        .hud-value { color: var(--text-main); font-weight: 700; display: flex; align-items: center; gap: 8px;}
+        
+        .status-dot { width: 8px; height: 8px; background-color: #10b981; border-radius: 50%; box-shadow: 0 0 10px #10b981; animation: blink 2s infinite; }
+        .status-dot.error { background-color: var(--nasa-red); box-shadow: 0 0 10px var(--nasa-red); animation: none; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+        /* -----------------------------------------
+           FORM PANEL
+           ----------------------------------------- */
+        .form-section {
+            width: 550px; background: var(--panel-bg); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
+            border-left: 1px solid var(--panel-border); padding: 50px 40px; display: flex; flex-direction: column;
+            justify-content: center; box-shadow: -20px 0 50px var(--shadow-heavy); z-index: 20;
+            overflow-y: auto;
+        }
+        .form-header { margin-bottom: 30px; }
+        .form-header h2 { font-size: 24px; font-weight: 700; margin: 0 0 5px 0; }
+        .form-header p { color: var(--text-dim); font-size: 14px; margin: 0; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .full-width { grid-column: 1 / -1; }
+
+        .terminal-input { position: relative; }
+        .terminal-input input {
+            width: 100%; background: transparent; border: none; border-bottom: 1px solid var(--input-border);
+            padding: 10px 0; font-size: 16px; color: var(--text-main); font-family: 'Inter', sans-serif;
+            transition: all 0.3s ease; box-sizing: border-box; outline: none; border-radius: 0;
+        }
+        .terminal-input input:focus { border-bottom-color: var(--text-main); }
+        .terminal-input label {
+            position: absolute; left: 0; top: 10px; color: var(--text-dim); font-size: 16px;
+            pointer-events: none; transition: 0.3s cubic-bezier(0.16, 1, 0.3, 1) all;
+        }
+        .terminal-input input:focus ~ label, .terminal-input input:not(:placeholder-shown) ~ label {
+            top: -16px; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--nasa-red);
+        }
+
+        .nasa-btn {
+            grid-column: 1 / -1; background: var(--nasa-red); color: white; border: none;
+            padding: 20px; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 800; letter-spacing: 2px;
+            text-transform: uppercase; cursor: pointer; margin-top: 20px; display: flex; justify-content: space-between;
+            align-items: center; transition: all 0.4s ease; box-shadow: 0 4px 15px rgba(252, 61, 33, 0.3);
+        }
+        .nasa-btn:hover { background: #d12d16; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(252, 61, 33, 0.5); }
+
+        @media (max-width: 960px) {
+            .layout-container { flex-direction: column; } body { overflow-y: auto; overflow-x: hidden; }
+            .hero-section { padding: 10% 6%; flex: none; }
+            .form-section { width: 100%; padding: 10% 5%; border-left: none; border-top: 1px solid var(--panel-border); box-sizing: border-box; }
+        }
+
+        /* =========================================
+           BULLETPROOF PDF PRINT LAYOUT
+           ========================================= */
+        .print-area { display: none; }
+
+        @media print {
+            @page { size: A4 portrait; margin: 10mm; }
+            * { 
+                -webkit-print-color-adjust: exact !important; 
+                print-color-adjust: exact !important; 
+                box-shadow: none !important; 
+                text-shadow: none !important; 
+                background: transparent !important; 
+            }
+            body, html { 
+                background: white !important; color: black !important; 
+                margin: 0 !important; padding: 0 !important; 
+                display: block !important; height: auto !important; 
+            }
+            
+            .building-bg, .navbar, .bg-overlay, .layout-container { display: none !important; }
+
+            .print-area { 
+                display: block !important; 
+                width: 100% !important; 
+                height: 275mm !important; 
+                box-sizing: border-box !important; 
+                background-color: white !important; 
+                position: relative !important;
+            }
+
+            .print-border-outer { 
+                border: 2px solid #000080 !important; 
+                padding: 0 !important; 
+                box-sizing: border-box !important; 
+                height: 100% !important; 
+                display: block !important;
+                position: relative !important;
+            }
+            
+            .print-border-inner { 
+                border: none !important; 
+                box-sizing: border-box !important; 
+                padding: 25px 35px !important; 
+                display: block !important; 
+                height: 100% !important; 
+                position: relative !important;
+            }
+
+            .print-area, .print-area * { font-family: "Times New Roman", Times, serif !important; color: #000 !important; }
+            sup { font-size: 0.6em !important; vertical-align: super !important; }
+
+            .print-header-wrapper { display: flex !important; align-items: center !important; margin-bottom: 20px !important; }
+            .print-logo { margin-right: 20px !important; }
+            .print-logo img { width: 90px !important; height: auto !important; display: block !important;}
+            
+            .print-header-text { text-align: center !important; flex-grow: 1 !important; display: block !important; }
+            .print-header-text h1 { font-size: 22px !important; font-weight: bold !important; margin: 0 0 5px 0 !important; display: block !important; }
+            .print-header-text p { font-size: 13px !important; margin: 0 !important; display: block !important; }
+
+            .dept-divider { border-top: 2px solid #000 !important; margin: 10px 0 !important; width: 100% !important; }
+            .dept-text { text-align: center !important; font-size: 16px !important; font-weight: bold !important; color: #000080 !important; padding: 5px 0 !important; display: block !important;}
+            .dept-divider-bottom { border-top: 2px solid #000 !important; margin: 10px 0 25px 0 !important; width: 100% !important; }
+
+            .year-wrapper { display: flex !important; justify-content: center !important; margin-bottom: 25px !important; width: 100% !important;}
+            .print-year-box { border: 1px solid #ff0000 !important; color: #ff0000 !important; font-weight: bold !important; font-size: 15px !important; padding: 5px 15px !important; }
+
+            .p-row {
+                display: flex !important;
+                align-items: flex-start !important; 
+                margin-bottom: 15px !important;
+                width: 100% !important;
+            }
+            .p-label {
+                font-size: 16px !important;
+                font-weight: bold !important;
+                margin-right: 15px !important;
+                white-space: nowrap !important;
+                margin-top: 6px !important; 
+            }
+            
+            .p-box {
+                border: 1px solid #000 !important;
+                border-radius: 8px !important;
+                min-height: 28px !important; 
+                height: auto !important;     
+                display: block !important; 
+                padding: 4px 10px !important;   
+                font-family: 'Arial', sans-serif !important; 
+                font-size: 15px !important; 
+                flex-grow: 1 !important;
+                width: 100% !important; 
+                max-width: 100% !important;
+                box-sizing: border-box !important;
+                white-space: pre-wrap !important; 
+                word-wrap: break-word !important;
+                overflow-wrap: break-word !important;
+                word-break: break-word !important; 
+                line-height: 1.4 !important;
+            }
+
+            .p-row-multi {
+                display: flex !important;
+                align-items: flex-start !important;
+                justify-content: space-between !important;
+                margin-bottom: 15px !important;
+                width: 100% !important;
+                gap: 15px !important;
+            }
+            .p-col { 
+                display: flex !important; 
+                align-items: flex-start !important; 
+                min-width: 0 !important; 
+            }
+            .p-col .p-label { margin-right: 10px !important; margin-top: 6px !important; }
+            .p-col .p-box { flex-grow: 1 !important; width: 100% !important; }
+            
+            .col-year-sem { flex: 1 !important; }
+
+            .marks-wrapper { width: 70px !important; border: 1px solid #000 !important; border-radius: 8px !important; display: flex !important; flex-direction: column !important; overflow: hidden !important; }
+            .marks-top { height: 25px !important; }
+            .marks-bottom { height: 30px !important; border-top: 1px solid #000 !important; display: flex !important; align-items: center !important; justify-content: center !important; font-weight: bold !important; font-size: 18px !important; }
+
+            .print-footer { 
+                position: absolute !important;
+                bottom: 25px !important;
+                right: 35px !important;
+                text-align: right !important; 
+            }
+            .print-footer-text { 
+                display: inline-block !important;
+                text-align: right !important; 
+                font-size: 15px !important; 
+                font-weight: bold !important; 
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="building-bg"></div>
+    <div class="bg-overlay"></div>
+
+    <nav class="navbar">
+        <div class="nav-brand">
+            <img src="C:\Users\Subhasish Dutta\Music\NITM WEBSITE\NIT MEGHALAYA.jpg" alt="NIT Meghalaya Logo">
+            <span>NITM Student Self Service</span>
+        </div>
+    </nav>
+
+    <div class="layout-container">
+        <div class="hero-section">
+            <div class="mission-badge">Systems Initialize</div>
+            <h1>Synthesize<br>Academic Data</h1>
+            <p>Your portal for generating standardized, print-ready assignment cover pages. Enter your mission parameters into the terminal to render the official documentation.</p>
+            
+            <div class="telemetry-hud">
+                <div class="hud-row">
+                    <span class="hud-label">Satellite Uplink</span>
+                    <span class="hud-value"><div id="statusDot" class="status-dot loading"></div> <span id="statusText">Acquiring Signal...</span></span>
+                </div>
+                <div class="hud-row">
+                    <span class="hud-label">Date / Time</span>
+                    <span class="hud-value" id="datetimeDisplay">--:--:--</span>
+                </div>
+                <div class="hud-row">
+                    <span class="hud-label">Global Location</span>
+                    <span class="hud-value" id="locDisplay">Awaiting Geo-Lock...</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <div class="form-header">
+                <h2>Document Parameters</h2>
+                <p>Verify information before execution.</p>
+            </div>
+
+            <form id="coverPageForm" class="form-grid">
+                
+                <div class="terminal-input full-width">
+                    <input type="text" id="assignNo" placeholder=" " required autocomplete="off">
+                    <label>Assignment No (e.g., 05)</label>
+                </div>
+                
+                <div class="terminal-input">
+                    <input type="text" id="studentName" placeholder=" " required autocomplete="off">
+                    <label>Student Name</label>
+                </div>
+                <div class="terminal-input">
+                    <input type="text" id="rollNo" placeholder=" " required autocomplete="off">
+                    <label>Roll Number</label>
+                </div>
+                
+                <div class="terminal-input full-width">
+                    <input type="text" id="department" placeholder=" " required autocomplete="off">
+                    <label>Department (e.g. Computer Science & Engineering)</label>
+                </div>
+                <div class="terminal-input full-width">
+                    <input type="text" id="programme" placeholder=" " required autocomplete="off">
+                    <label>Branch & Section / Programme</label>
+                </div>
+                
+                <div class="terminal-input">
+                    <input type="text" id="year" placeholder=" " required autocomplete="off">
+                    <label>Year (e.g., 2nd)</label>
+                </div>
+                <div class="terminal-input">
+                    <input type="text" id="semester" placeholder=" " required autocomplete="off">
+                    <label>Semester (e.g., 4th)</label>
+                </div>
+                
+                <div class="terminal-input">
+                    <input type="text" id="courseName" placeholder=" " required autocomplete="off">
+                    <label>Course Name</label>
+                </div>
+                <div class="terminal-input">
+                    <input type="text" id="courseCode" placeholder=" " required autocomplete="off">
+                    <label>Course Code</label>
+                </div>
+
+                <div class="terminal-input">
+                    <input type="text" id="assignDate" placeholder=" " required autocomplete="off">
+                    <label>Date of Assignment</label>
+                </div>
+                <div class="terminal-input">
+                    <input type="text" id="dueDate" placeholder=" " required autocomplete="off">
+                    <label>Due Date</label>
+                </div>
+                
+                <div class="terminal-input full-width">
+                    <input type="text" id="submitDate" placeholder=" " required autocomplete="off">
+                    <label>Date of Submission</label>
+                </div>
+
+                <button type="submit" class="nasa-btn">
+                    <span>Initialize PDF Render</span>
+                    <div class="arrow">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+                    </div>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="print-area">
+        <div class="print-border-outer">
+            <div class="print-border-inner">
+                
+                <div class="print-header-wrapper">
+                    <div class="print-logo">
+                        <img src="C:\Users\Subhasish Dutta\Music\NITM WEBSITE\NIT MEGHALAYA.jpg" alt="Logo">
+                    </div>
+                    <div class="print-header-text">
+                        <h1>NATIONAL INSTITUTE OF TECHNOLOGY MEGHALAYA</h1>
+                        <p>An Institute of National Importance | Approved by AICTE | Recognized by Govt. of India</p>
+                    </div>
+                </div>
+
+                <div class="dept-divider"></div>
+                <div class="dept-text">Department of <span id="outDepartmentHeader"></span></div>
+                <div class="dept-divider-bottom"></div>
+                
+                <div class="year-wrapper">
+                    <div class="print-year-box" id="outAcademicYear">Academic Year: ----</div>
+                </div>
+
+                <div class="p-row">
+                    <div class="p-label">Student Roll Number:</div>
+                    <div class="p-box" id="outRollNo"></div>
+                </div>
+
+                <div class="p-row">
+                    <div class="p-label">Student Name:</div>
+                    <div class="p-box" id="outStudentName"></div>
+                </div>
+
+                <div class="p-row-multi">
+                    <div class="p-col col-year-sem">
+                        <div class="p-label">Year:</div>
+                        <div class="p-box" id="outYear"></div>
+                    </div>
+                    <div class="p-col col-year-sem">
+                        <div class="p-label">Semester:</div>
+                        <div class="p-box" id="outSemester"></div>
+                    </div>
+                </div>
+
+                <div class="p-row">
+                    <div class="p-label">Branch & Section:</div>
+                    <div class="p-box" id="outProgramme"></div>
+                </div>
+
+                <div class="p-row">
+                    <div class="p-label">Course Name:</div>
+                    <div class="p-box" id="outCourseName"></div>
+                </div>
+
+                <div class="p-row">
+                    <div class="p-label">Course Code:</div>
+                    <div class="p-box" id="outCourseCode"></div>
+                </div>
+
+                <div class="p-row">
+                    <div class="p-label">Assignment Number:</div>
+                    <div class="p-box" id="outAssignNo" style="max-width: 150px !important;"></div>
+                </div>
+
+                <div class="p-row">
+                    <div class="p-label">Date of Assignment:</div>
+                    <div class="p-box" id="outAssignDate"></div>
+                </div>
+                
+                <div class="p-row">
+                    <div class="p-label">Due date:</div>
+                    <div class="p-box" id="outDueDate"></div>
+                </div>
+
+                <div class="p-row">
+                    <div class="p-label">Date of Submission:</div>
+                    <div class="p-box" id="outSubmitDate"></div>
+                </div>
+
+                <div class="p-row" style="margin-top: 10px;">
+                    <div class="p-label">Marks Obtained:</div>
+                    <div class="marks-wrapper">
+                        <div class="marks-top"></div>
+                        <div class="marks-bottom">10</div>
+                    </div>
+                </div>
+
+                <div class="p-row" style="margin-top: 5px;">
+                    <div class="p-label">Remarks:</div>
+                </div>
+
+                <div class="print-footer">
+                    <div class="print-footer-text">
+                        Signature of Faculty with date<br><br><br>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function updateAcademicYear() {
+            const today = new Date();
+            const currentYear = today.getFullYear();
+            const currentMonth = today.getMonth(); 
+
+            let academicYearStr = "";
+            if (currentMonth < 6) {
+                academicYearStr = `${currentYear - 1}-${currentYear}`;
+            } else {
+                academicYearStr = `${currentYear}-${currentYear + 1}`;
+            }
+            document.getElementById('outAcademicYear').innerText = `Academic Year: ${academicYearStr}`;
+        }
+        updateAcademicYear(); 
+
+        function updateClock() {
+            const now = new Date();
+            const dateOpts = { weekday: 'short', year: 'numeric', month: 'short', day: '2-digit' };
+            const timeOpts = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
+            document.getElementById('datetimeDisplay').innerText = 
+                `${now.toLocaleDateString('en-US', dateOpts)} | ${now.toLocaleTimeString('en-US', timeOpts)}`;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const locDisplay = document.getElementById('locDisplay');
+
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(async (position) => {
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+                
+                statusDot.className = 'status-dot';
+                statusText.innerText = 'Signal Locked';
+
+                try {
+                    const geoResponse = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`);
+                    const geoData = await geoResponse.json();
+                    locDisplay.innerText = `${geoData.city || geoData.principalSubdivision}, ${geoData.countryName}`;
+                } catch(e) {
+                    locDisplay.innerText = `${lat.toFixed(2)}° N, ${lon.toFixed(2)}° E`;
+                }
+
+            }, (error) => {
+                statusDot.className = 'status-dot error';
+                statusText.innerText = 'Geo-Lock Failed';
+                locDisplay.innerText = 'Access Denied';
+            });
+        }
+
+        function formatSuperscript(text) {
+            return text.replace(/(\d+)(st|nd|rd|th)/gi, '$1<sup>$2</sup>');
+        }
+
+        document.getElementById('coverPageForm').addEventListener('submit', function(e) {
+            e.preventDefault(); 
+            
+            document.getElementById('outAssignNo').innerText = document.getElementById('assignNo').value;
+            document.getElementById('outStudentName').innerText = document.getElementById('studentName').value;
+            document.getElementById('outRollNo').innerText = document.getElementById('rollNo').value;
+            document.getElementById('outProgramme').innerText = document.getElementById('programme').value;
+            document.getElementById('outDepartmentHeader').innerText = document.getElementById('department').value;
+            document.getElementById('outCourseName').innerText = document.getElementById('courseName').value;
+            document.getElementById('outCourseCode').innerText = document.getElementById('courseCode').value;
+            document.getElementById('outAssignDate').innerText = document.getElementById('assignDate').value;
+            document.getElementById('outDueDate').innerText = document.getElementById('dueDate').value;
+            document.getElementById('outSubmitDate').innerText = document.getElementById('submitDate').value;
+            
+            document.getElementById('outYear').innerHTML = formatSuperscript(document.getElementById('year').value);
+            document.getElementById('outSemester').innerHTML = formatSuperscript(document.getElementById('semester').value);
+
+            setTimeout(() => { window.print(); }, 150);
+        });
+    </script>
+</body>
+</html>
